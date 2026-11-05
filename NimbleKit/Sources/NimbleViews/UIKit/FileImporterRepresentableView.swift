@@ -45,7 +45,9 @@ public struct FileImporterRepresentableView: UIViewControllerRepresentable {
 	public class Coordinator: NSObject, UIDocumentPickerDelegate {
 		var onDocumentsPicked: ([URL]) -> Void
 		private let folderBookmarkKey: String?
-		private var heldFolder: URL?
+		// Reached from deinit, which runs off the main actor; deinit only fires
+		// once every reference is gone, so the unsynchronized access is safe.
+		private nonisolated(unsafe) var heldFolder: URL?
 
 		init(folderBookmarkKey: String?, onDocumentsPicked: @escaping ([URL]) -> Void) {
 			self.folderBookmarkKey = folderBookmarkKey
@@ -68,7 +70,7 @@ public struct FileImporterRepresentableView: UIViewControllerRepresentable {
 			return url
 		}
 
-		private func release() {
+		nonisolated private func release() {
 			heldFolder?.stopAccessingSecurityScopedResource()
 			heldFolder = nil
 		}
