@@ -23,7 +23,8 @@ class ServerInstaller: Identifiable, ObservableObject {
 	var packageUrl: URL?
 	var manifestUrl: URL?
 	/// Set during setup when a trusted certificate is loaded, so endpoints can advertise https://.
-	private(set) var tlsEnabled = false
+	/// Internal setter: ServerInstaller+TLS assigns it during setupApp.
+	var tlsEnabled = false
 	private(set) var startupError: Error?
 	var app: AppInfoPresentable
 	@ObservedObject var viewModel: InstallerStatusViewModel
