@@ -1,0 +1,43 @@
+name: Build App
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "RyukSign/**"
+      - "Zsign/**"
+      - "IDeviceKitten/**"
+      - "RyukSign.xcodeproj/**"
+      - "RyukSign.xcworkspace/**"
+      - "Makefile"
+      - ".github/workflows/build.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Use Xcode 16.4
+        run: sudo xcode-select -s /Applications/Xcode_16.4.app/Contents/Developer
+
+      - name: Compile RyukSign
+        run: |
+          # `make` builds deps (SSL pack) first via the Makefile dependency.
+          make
+          ls -lh packages/
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: RyukSign-ipa
+          path: packages/*.ipa
+          if-no-files-found: error
+          retention-days: 30
