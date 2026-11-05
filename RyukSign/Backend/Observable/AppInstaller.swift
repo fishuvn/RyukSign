@@ -143,9 +143,18 @@ final class AppInstaller: ObservableObject {
 		if _serverMethod == 1 {
 			viewModel.status = .sendingManifest
 			server.manifestUrl = await ManifestService.resolve(for: app, payload: server.payloadEndpoint)
+
+			guard server.manifestUrl != nil else {
+				_finish(.failure(Self.error(.localized("Could not reach the manifest service. Check your internet connection and try again, or switch the install method in settings."))))
+				return
+			}
 		}
 
 		var failure = server.startupError
+		if failure == nil, _serverMethod == 1, !server.tlsEnabled {
+			// iOS 27 and later block app-install connections served over plain HTTP.
+			failure = Self.error(.localized("iOS 27 and later require the install to be served over HTTPS, but no certificate was found. Rebuild with the bundled certificate (make deps) or switch the install method in settings."))
+		}
 		if failure == nil {
 			failure = await server.selfCheck()
 		}

@@ -22,6 +22,8 @@ class ServerInstaller: Identifiable, ObservableObject {
 
 	var packageUrl: URL?
 	var manifestUrl: URL?
+	/// Set during setup when a trusted certificate is loaded, so endpoints can advertise https://.
+	private(set) var tlsEnabled = false
 	private(set) var startupError: Error?
 	var app: AppInfoPresentable
 	@ObservedObject var viewModel: InstallerStatusViewModel
@@ -113,9 +115,11 @@ class ServerInstaller: Identifiable, ObservableObject {
 		}
 	}
 	
-	// installd fails silently when unreachable, so prove it first — but not for Semi Local, where probing a LAN address would prompt for local network access.
+	// installd fails silently when unreachable, so prove it first — but not when serving
+	// plain HTTP from a LAN address, where probing would prompt for local network access.
+	// With TLS the advertised host resolves to loopback, so the probe is prompt-free.
 	func selfCheck() async -> Error? {
-		guard getServerMethod() != 1 else { return nil }
+		guard tlsEnabled || getServerMethod() != 1 else { return nil }
 
 		let host = sni()
 		let addresses = Self.resolve(host)

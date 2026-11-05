@@ -44,7 +44,9 @@ To start, we need a validly signed IPA, achieved with Zsign using a provided IPA
 - Include valid HTTPS SSL certificates (we use [*.backloop.dev](https://backloop.dev/)).
 - Then `itms-services://?action=download-manifest&url=<PLIST_URL>` initiates the install via `UIApplication.open`.
 
-Due to iOS 18 entitlement changes, an alternative is needed: either install fully locally via the local server (above), or use an external HTTPS server as a middle-man for `PLIST_URL` while keeping the files local — for the latter, a plain insecure local server plus [plistserver](https://github.com/nekohaxx/plistserver) for the `PLIST_URL`, and a Safari webview redirect to the `itms-services://` URL.
+Due to iOS 18 entitlement changes, an alternative is needed: either install fully locally via the local server (above), or use an external HTTPS server as a middle-man for `PLIST_URL` while keeping the files local — for the latter, the local server plus [plistserver](https://github.com/nekohaxx/plistserver) for the `PLIST_URL`, and a Safari webview redirect to the `itms-services://` URL.
+
+> **iOS 27 note:** Starting with iOS 27.0, connections made during app installation must meet App Transport Security requirements — plain-HTTP payloads are refused (`NSURLError -1022`), per [Apple's security notice](https://support.apple.com/en-us/126655). Both install modes therefore serve the payload over HTTPS with the bundled certificate (`make deps`); without it, semi-local installs fail on iOS 27 and later, and older iOS versions fall back to plain HTTP.
 
 #### Install (Pairing)
 

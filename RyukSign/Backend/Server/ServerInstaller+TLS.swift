@@ -25,13 +25,17 @@ extension ServerInstaller {
 	func setupApp(port: Int) throws -> Application {
 		let app = Application(Self.env)
 		app.threadPool = .init(numberOfThreads: 1)
-		
-		if getServerMethod() != 1 {
-			if let tls = try tls() {
-				app.http.server.configuration.tlsConfiguration = tls
-			} else {
-				FileLogger.error("no certificate found, serving plain HTTP on an https:// url — iOS will refuse this", category: "install")
-			}
+
+		// iOS 27 and later block app-install connections served over plain HTTP
+		// (ATS enforcement for itms-services payloads), so terminate TLS in both
+		// modes whenever a trusted certificate is available.
+		if let tls = try tls() {
+			app.http.server.configuration.tlsConfiguration = tls
+			tlsEnabled = true
+		} else if getServerMethod() == 1 {
+			FileLogger.error("no certificate found: the payload will be served over plain HTTP, which iOS 27 and later refuse for app installs", category: "install")
+		} else {
+			FileLogger.error("no certificate found, serving plain HTTP on an https:// url — iOS will refuse this", category: "install")
 		}
 		
 		app.http.server.configuration.hostname = sni()
@@ -47,13 +51,21 @@ extension ServerInstaller {
 	// MARK: Files/IP
 	func sni() -> String {
 		let localhost = "127.0.0.1"
-		
+
+		// Advertise the certificate's hostname in both modes so the payload URL is
+		// https:// and passes iOS 27's ATS enforcement; *.backloop.dev resolves to
+		// loopback, keeping the fetch on-device. Without a certificate, fall back to
+		// the legacy plain-HTTP hosts for older iOS.
+		if let name = readCommonName() {
+			return name
+		}
+
 		if getServerMethod() == 1 {
 			return !self.getIPFix()
 			? (Self.getLocalAddress() ?? localhost)
 			: localhost
 		} else {
-			return readCommonName() ?? localhost
+			return localhost
 		}
 	}
 	

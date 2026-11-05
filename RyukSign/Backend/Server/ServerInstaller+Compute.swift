@@ -11,9 +11,15 @@ import Foundation
 import UIKit.UIGraphicsImageRenderer
 
 extension ServerInstaller {
+	// iOS 27 and later refuse app-install payloads served over plain HTTP, so only
+	// advertise http:// when no certificate is available (pre-27 fallback).
+	private var endpointScheme: String {
+		self.tlsEnabled ? "https" : "http"
+	}
+
 	var plistEndpoint: URL {
 		var comps = URLComponents()
-		comps.scheme = self.getServerMethod() == 1 ? "http" : "https"
+		comps.scheme = endpointScheme
 		comps.host = sni()
 		comps.path = "/\(id).plist"
 		comps.port = port
@@ -22,16 +28,16 @@ extension ServerInstaller {
 
 	var payloadEndpoint: URL {
 		var comps = URLComponents()
-		comps.scheme = self.getServerMethod() == 1 ? "http" : "https"
+		comps.scheme = endpointScheme
 		comps.host = sni()
 		comps.path = "/\(id).ipa"
 		comps.port = port
 		return comps.url!
 	}
-	
+
 	var pageEndpoint: URL {
 		var comps = URLComponents()
-		comps.scheme = self.getServerMethod() == 1 ? "http" : "https"
+		comps.scheme = endpointScheme
 		comps.host = sni()
 		comps.path = "/install"
 		comps.port = port
@@ -56,7 +62,7 @@ extension ServerInstaller {
 
 	var displayImageSmallEndpoint: URL {
 		var comps = URLComponents()
-		comps.scheme = "https"
+		comps.scheme = endpointScheme
 		comps.host = sni()
 		comps.path = "/app57x57.png"
 		comps.port = port
@@ -65,7 +71,7 @@ extension ServerInstaller {
 
 	var displayImageLargeEndpoint: URL {
 		var comps = URLComponents()
-		comps.scheme = "https"
+		comps.scheme = endpointScheme
 		comps.host = sni()
 		comps.path = "/app512x512.png"
 		comps.port = port

@@ -24,8 +24,10 @@ enum ManifestService {
 			}
 			Logger.misc.error("Manifest endpoint unusable: \(candidate.host ?? "?", privacy: .public)")
 		}
-		
-		return candidates.first
+
+		// Returning a dead manifest makes iOS show nothing and the installer misreport
+		// the failure as a cancelled install; surface the outage instead.
+		return nil
 	}
 	
 	private static func _url(endpoint: String, app: AppInfoPresentable, payload: URL) -> URL? {
